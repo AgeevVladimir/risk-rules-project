@@ -1,4 +1,5 @@
 """Important strategy."""
+import logging
 import typing
 
 import pydantic
@@ -6,6 +7,9 @@ import pydantic
 from helpers import strategy as strategy_helpers
 from rules.real_estate import RealEstateRule
 from rules.salary import SalaryRule
+
+
+LOGGER_OBJ: typing.Final[logging.Logger] = logging.getLogger(__file__)
 
 
 class InputModel(pydantic.BaseModel):
@@ -42,12 +46,15 @@ class CurrentStrategy(strategy_helpers.BaseStrategy[InputModel, OutputModel]):
 
     def check_is_ok_for_cashout(self) -> "CurrentStrategy":
         """Main method for every startuper."""
-        if not RealEstateRule(
+        rule_prepared: RealEstateRule = RealEstateRule(
             self._prepared_payload.rooms, self._prepared_payload.floor, self._prepared_payload.square
-        ):
+        )
+        if not rule_prepared.can_be_sold():
             raise strategy_helpers.StrategyGenericException(
                 "Possibly current real estate is not aproppriate for this user"
             )
+        if not rule_prepared.is_best_price(self._prepared_payload.cash_in_your_hands):
+            LOGGER_OBJ.error("There is no money on your account, but this is not blocker for our decisions")
         self._inner_result_buf["average_score"] = 1.1
         return self
 
