@@ -24,4 +24,4 @@ class RealEstateRule:
         """Price rule."""
         if price == self._calc_average_price():
             return True
-        return True
+        return False
